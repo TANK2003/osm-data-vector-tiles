@@ -1,0 +1,70 @@
+[webserver]
+port = ":${TEGOLA_PORT}"
+hostname = "localhost"
+
+[webserver.headers]
+  # redefine default cors origin
+Access-Control-Allow-Origin = "${ACCESS_CONTROL_ORIGIN}"
+
+
+[[providers]]
+name = "osm_data"
+type = "mvt_postgis"     
+
+uri = "${DB_CONN}"
+srid = 4326
+    [[providers.layers]]
+    name = "buildings"
+    geometry_fieldname = "way"
+    geometry_type="polygon"
+    id_fieldname = "id"
+    sql = '''
+        SELECT 
+            ST_AsMVTGeom(way,!BBOX!,clip_geom := false) AS way,
+            id,
+            osm_id,
+            osm_type,type,
+            is_part,building,
+            wall,
+            building_type,
+            name,
+            height,
+            min_height,
+            levels,
+            min_level,
+            material,
+            roof_height,
+            roof_levels,
+            roof_material,
+            roof_type,
+            roof_orientation,
+            roof_direction,
+            roof_color,
+            color,
+            windows,
+            default_roof,
+            rnb,
+            diff_rnb,shelter_type,ombb00,
+            ombb01,
+            ombb10,
+            ombb11,
+            ombb20,
+            ombb21,
+            ombb30,
+            ombb31,
+            match_rnb_ids,
+            match_rnb_score,
+            match_rnb_diff
+        FROM 
+            extracted_buildings  
+        WHERE 
+            way && !BBOX!
+        '''
+[[maps]]
+name = "osm_data"
+[[maps.layers]]
+  provider_layer = "osm_data.buildings"
+  min_zoom = 16
+  max_zoom = 16
+  clip_geom = false
+  simplify = false

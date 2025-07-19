@@ -1,0 +1,16 @@
+version: "3.8"
+   
+services:
+    
+  tegola:
+    image: gospatial/tegola:edge
+    container_name: tegola
+    ports:
+      - "${TEGOLA_PORT}:${TEGOLA_PORT}"
+    volumes:
+      - ./tegola_config:/opt/tegola_config
+    command: serve --config /opt/tegola_config/config.toml
+    # restart: unless-stopped
+    env_file:
+      - .env
+
