@@ -4,6 +4,7 @@ CREATE INDEX IF NOT EXISTS idx_line_tags_hstore_gin ON public.planet_osm_line US
 
 CREATE INDEX IF NOT EXISTS idx_planet_osm_rels_members_gin ON planet_osm_rels USING GIN (members);
 
+\i outline_way.sql
 
 CREATE TABLE IF NOT EXISTS  extracted_buildings (
     id SERIAL PRIMARY KEY,
@@ -134,86 +135,23 @@ ALTER TABLE extracted_buildings
       )
     ) STORED;
 
+
+ALTER TABLE extracted_buildings
+ADD COLUMN match_rnb_ids TEXT,
+ADD COLUMN match_rnb_score FLOAT,
+ADD COLUMN match_rnb_diff TEXT;
+
+
 CREATE INDEX IF NOT EXISTS idx_extracted_buildings_way ON extracted_buildings USING GIST (way);
-
 CREATE INDEX IF NOT EXISTS idx_extracted_buildings_osm_id ON extracted_buildings (osm_id);
-
 CREATE INDEX IF NOT EXISTS idx_extracted_buildings_osm_type ON extracted_buildings (osm_type);
-
+CREATE INDEX IF NOT EXISTS idx_extracted_buildings_wall ON extracted_buildings (wall);
+CREATE INDEX IF NOT EXISTS idx_extracted_buildings_shelter_type ON extracted_buildings (shelter_type);
+CREATE INDEX IF NOT EXISTS idx_extracted_buildings_building ON extracted_buildings (building);
 
 \i insert_buildings_in_extracted_buildings.sql
 ----
 
-CREATE OR REPLACE FUNCTION trg_update_rnb_fields()
-RETURNS trigger AS
-$$
-BEGIN
-  IF EXISTS (
-       SELECT 1
-         FROM extracted_buildings cb
-        WHERE cb.osm_id = NEW.osm_id
-     ) THEN
-    UPDATE extracted_buildings SET
-      rnb      = COALESCE(NEW.tags -> 'ref:FR:RNB', ''),      
-      diff_rnb =COALESCE(NEW.tags -> 'diff:ref:FR:RNB', '') 
-    WHERE osm_id = NEW.osm_id;
-  END IF;
+\i add_triggers.sql
 
-  RETURN NULL;
-END;
-$$
-LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS update_custom_rnb_poly
-  ON planet_osm_polygon;
-
-DROP TRIGGER IF EXISTS update_custom_rnb_poly
-  ON planet_osm_line;
-
-CREATE TRIGGER  update_custom_rnb_poly
-  AFTER INSERT OR UPDATE
-  ON planet_osm_polygon
-  FOR EACH ROW
-  EXECUTE FUNCTION trg_update_rnb_fields();
-
-CREATE TRIGGER  update_custom_rnb_line
-  AFTER INSERT OR UPDATE
-  ON planet_osm_line
-  FOR EACH ROW
-  EXECUTE FUNCTION trg_update_rnb_fields();
-
------
-UPDATE
-    extracted_buildings
-SET
-    ombb00 = sub.ombb00,
-    ombb01 = sub.ombb01,
-    ombb10 = sub.ombb10,
-    ombb11 = sub.ombb11,
-    ombb20 = sub.ombb20,
-    ombb21 = sub.ombb21,
-    ombb30 = sub.ombb30,
-    ombb31 = sub.ombb31
-FROM
-    (
-        SELECT
-            id,
-            ST_X(ST_PointN(ring, 1)) AS ombb00,
-            ST_Y(ST_PointN(ring, 1)) AS ombb01,
-            ST_X(ST_PointN(ring, 2)) AS ombb10,
-            ST_Y(ST_PointN(ring, 2)) AS ombb11,
-            ST_X(ST_PointN(ring, 3)) AS ombb20,
-            ST_Y(ST_PointN(ring, 3)) AS ombb21,
-            ST_X(ST_PointN(ring, 4)) AS ombb30,
-            ST_Y(ST_PointN(ring, 4)) AS ombb31
-        FROM
-            (
-                SELECT
-                    id,
-                    ST_ExteriorRing(ST_OrientedEnvelope(ST_Transform(way, 3857))) AS ring
-                FROM
-                    extracted_buildings
-            ) AS inner_sub
-    ) AS sub
-WHERE
-    sub.id = extracted_buildings.id;

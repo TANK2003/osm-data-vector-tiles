@@ -27,57 +27,7 @@ INSERT INTO
         diff_rnb,
         shelter_type,
         way
-    ) WITH RECURSIVE -- 1) relation_links : chaque relation dépliée en (relation→membre, rôle)
-    relation_links AS (
-        SELECT
-            r.id AS relation_id,
-            (m ->> 'ref') :: bigint AS member_id,
-            m ->> 'type' AS member_type,
-            -- 'W' ou 'R'
-            m ->> 'role' AS role
-        FROM
-            planet_osm_rels r
-            CROSS JOIN LATERAL jsonb_array_elements(to_jsonb(r.members)) AS m
-    ),
-    -- 2) outline_roots : graine = **tous** les liens (W ou R) ayant rôle outer/outline
-    outline_roots AS (
-        SELECT
-            relation_id,
-            member_id,
-            member_type
-        FROM
-            relation_links
-        WHERE
-            role IN ('outer', 'outline')
-    ),
-    -- 3) outline_descendants : descente récursive depuis ces graines
-    outline_descendants AS (
-        -- a) on part des graines (ways et relations marqués outer/outline)
-        SELECT
-            member_id,
-            member_type
-        FROM
-            outline_roots
-        UNION
-        ALL -- b) on descend : si un descendant est une relation, on prend ses membres
-        SELECT
-            rl.member_id,
-            rl.member_type
-        FROM
-            relation_links rl
-            JOIN outline_descendants od ON rl.relation_id = od.member_id
-        WHERE
-            od.member_type = 'R'
-    ),
-    -- 4) on filtre pour ne garder que les ways rencontrés
-    ways_used_as_outline AS (
-        SELECT
-            DISTINCT member_id AS way_id
-        FROM
-            outline_descendants
-        WHERE
-            member_type = 'W'
-    )
+    ) 
 SELECT
     p.osm_id,
     CASE
@@ -153,7 +103,7 @@ SELECT
     CASE
         WHEN COALESCE((p.tags -> 'windows'), '') NOT IN ('', 'no') THEN p.tags -> 'windows'
         ELSE NULL
-    END AS roof_orientation,
+    END AS windows,
     CASE
         WHEN (
             NOT p.tags ? 'bridge:support'
@@ -175,7 +125,7 @@ WHERE
         SELECT
             way_id
         FROM
-            ways_used_as_outline
+            outline_way_ids
     )
     AND (
         NOT (
@@ -228,55 +178,6 @@ INSERT INTO
         diff_rnb,
         shelter_type,
         way
-    ) WITH RECURSIVE -- 1) relation_links : chaque relation dépliée en (relation→membre, rôle)
-    relation_links AS (
-        SELECT
-            r.id AS relation_id,
-            (m ->> 'ref') :: bigint AS member_id,
-            m ->> 'type' AS member_type,
-            m ->> 'role' AS role
-        FROM
-            planet_osm_rels r
-            CROSS JOIN LATERAL jsonb_array_elements(to_jsonb(r.members)) AS m
-    ),
-    -- 2) outline_roots : graine = **tous** les liens (W ou R) ayant rôle outer/outline
-    outline_roots AS (
-        SELECT
-            relation_id,
-            member_id,
-            member_type
-        FROM
-            relation_links
-        WHERE
-            role IN ('outer', 'outline')
-    ),
-    -- 3) outline_descendants : descente récursive depuis ces graines
-    outline_descendants AS (
-        -- a) on part des graines (ways et relations marqués outer/outline)
-        SELECT
-            member_id,
-            member_type
-        FROM
-            outline_roots
-        UNION
-        ALL -- b) on descend : si un descendant est une relation, on prend ses membres
-        SELECT
-            rl.member_id,
-            rl.member_type
-        FROM
-            relation_links rl
-            JOIN outline_descendants od ON rl.relation_id = od.member_id
-        WHERE
-            od.member_type = 'R'
-    ),
-    -- 4) on filtre pour ne garder que les ways rencontrés
-    ways_used_as_outline AS (
-        SELECT
-            DISTINCT member_id AS way_id
-        FROM
-            outline_descendants
-        WHERE
-            member_type = 'W'
     )
 SELECT
     p.osm_id,
@@ -353,7 +254,7 @@ SELECT
     CASE
         WHEN COALESCE((p.tags -> 'windows'), '') NOT IN ('', 'no') THEN p.tags -> 'windows'
         ELSE NULL
-    END AS roof_orientation,
+    END AS windows,
     CASE
         WHEN (
             NOT p.tags ? 'bridge:support'
@@ -375,7 +276,7 @@ WHERE
         SELECT
             way_id
         FROM
-            ways_used_as_outline
+            outline_way_ids
     )
     AND ST_IsClosed(way)
     AND ST_NPoints(way) >= 4
