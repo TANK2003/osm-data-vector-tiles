@@ -13,8 +13,7 @@ FROM
   ) AS gs(i) ON true
 WHERE
  array_position(r.tags, 'building')   IS NOT NULL AND
-  (array_position(r.members, 'outer')   IS NOT NULL
-  OR array_position(r.members, 'outline') IS NOT NULL);
+  (array_position(r.members, 'outline')   IS NOT NULL);
 
 
 CREATE INDEX IF NOT EXISTS idx_osm_relation_links_ids_relation_id ON osm_relation_links(relation_id);
