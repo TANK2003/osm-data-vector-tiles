@@ -54,7 +54,8 @@ srid = 4326
             ombb31,
             match_rnb_ids,
             match_rnb_score,
-            match_rnb_diff
+            match_rnb_diff,
+            parent_and_children
         FROM 
             extracted_buildings  
         WHERE 

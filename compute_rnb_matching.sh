@@ -21,6 +21,11 @@ MAX_ID=$(psql -qt -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SE
 psql -qt -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "REFRESH MATERIALIZED  view osm_relation_links;"
 psql -qt -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "REFRESH MATERIALIZED  view outline_way_ids;"
 
+psql -qt -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "REFRESH MATERIALIZED  view osm_buildings_relation_links;"
+psql -qt -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "REFRESH MATERIALIZED  view osm_buildings_outer_ways;"
+
+
+psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "./sql/update_parent_and_children.sql"
 
 echo "Traitement de la table extracted_buildings, IDs de $MIN_ID à $MAX_ID par pas de $BATCH."
 
