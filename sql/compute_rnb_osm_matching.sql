@@ -7,7 +7,7 @@ WITH
         AND match_rnb_ids is null
         AND (wall IS NULL OR wall <> 'no')
         AND (shelter_type IS NULL OR shelter_type <> 'public_transport')
-        AND (building IS NULL OR building NOT IN (
+        AND ( building NOT IN (
           'ruins','construction','static_caravan','ger','collapsed',
           'tent','tomb','abandoned','mobile_home','proposed',
           'destroyed','roof','no'
