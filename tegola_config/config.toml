@@ -55,7 +55,7 @@ srid = 4326
             match_rnb_ids,
             match_rnb_score,
             match_rnb_diff,
-            parent_and_children
+            parent_and_children::text
         FROM 
             extracted_buildings  
         WHERE 

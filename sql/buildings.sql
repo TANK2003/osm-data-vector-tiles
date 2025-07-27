@@ -162,7 +162,10 @@ CREATE INDEX IF NOT EXISTS idx_extracted_buildings_building ON extracted_buildin
 CREATE MATERIALIZED VIEW osm_buildings_relation_links AS
 SELECT
   r.id AS relation_id,
-  (substring(r.members[i] FROM 2))::bigint    AS member_id,
+  CASE 
+    WHEN substring(r.members[i] FROM 1 FOR 1) ='r' THEN (substring(r.members[i] FROM 2))::bigint *-1
+    ELSE (substring(r.members[i] FROM 2))::bigint
+  END AS member_id,
   substring(r.members[i] FROM 1 FOR 1)        AS member_type,
   r.members[i+1]                              AS role
 FROM
@@ -178,7 +181,6 @@ WHERE
 
 CREATE INDEX IF NOT EXISTS idx_osm_buildings_relation_links_ids_relation_id ON osm_buildings_relation_links(relation_id);
 CREATE INDEX IF NOT EXISTS idx_osm_buildings_relation_links_ids_member_id ON osm_buildings_relation_links(member_id);
-
 
 CREATE MATERIALIZED VIEW osm_buildings_outer_ways AS (
     SELECT
