@@ -41,7 +41,7 @@ for (( START=MIN_ID; START<=MAX_ID; START+=BATCH )); do
   batch_start=$(date +%s.%N)
   
   # exécution psql
-  psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "./sql/compute_rnb_osm_matching.sql"
+  psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -v START="$START" -v END="$END" -f "./sql/compute_rnb_osm_matching.sql"
   
   # mesurer fin de batch
   batch_end=$(date +%s.%N)

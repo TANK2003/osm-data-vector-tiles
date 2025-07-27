@@ -2,7 +2,7 @@ WITH
     filtered_osm AS (
       SELECT id AS osm_id, way, ST_Area(way) as osm_area
       FROM extracted_buildings
-      WHERE id BETWEEN $START AND $END
+      WHERE id BETWEEN :START AND :END
         AND rnb is not null
         AND match_rnb_ids is null
         AND (wall IS NULL OR wall <> 'no')
